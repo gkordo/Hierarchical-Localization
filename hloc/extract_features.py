@@ -123,6 +123,11 @@ confs = {
         'output': 'global-feats-openibl',
         'model': {'name': 'openibl'},
         'preprocessing': {'resize_max': 1024},
+    },
+    'dns': {
+        'output': 'dns-feats-cg',
+        'model': {'name': 'dns'},
+        'preprocessing': {'resize_min': 224},
     }
 }
 
