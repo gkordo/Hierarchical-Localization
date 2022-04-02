@@ -79,7 +79,7 @@ def main(feature_path, n_components=None, key='global_descriptor'):
 
     logger.info('Store whitened descriptors')
     with h5py.File(str(feature_path), 'r') as fdr:
-        with h5py.File(str(white_feature_path).replace('.h5', '_white.h5'), 'w') as fdw:
+        with h5py.File(str(white_feature_path), 'w') as fdw:
             def visit_fn(name, obj):
                 if isinstance(obj, h5py.Dataset):
                     value = obj[:]
