@@ -11,3 +11,6 @@
 [submodule "third_party/r2d2"]
 	path = third_party/r2d2
 	url = https://github.com/naver/r2d2.git
+[submodule "third_party/distill-and-select"]
+	path = third_party/distill-and-select
+	url = https://github.com/mever-team/distill-and-select
