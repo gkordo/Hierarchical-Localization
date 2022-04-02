@@ -197,6 +197,11 @@ class ImageDataset(torch.utils.data.Dataset):
             scale = self.conf.resize_max / max(size)
             size_new = tuple(int(round(x*scale)) for x in size)
             image = resize_image(image, size_new, self.conf.interpolation)
+        if self.conf.resize_min and (self.conf.resize_force
+                                     or min(size) > self.conf.resize_min):
+            scale = self.conf.resize_min / min(size)
+            size_new = tuple(int(round(x*scale)) for x in size)
+            image = resize_image(image, size_new, self.conf.interpolation)
 
         if self.conf.grayscale:
             image = image[None]
