@@ -1,6 +1,5 @@
 import sys
 from pathlib import Path
-import torchvision.transforms as tvf
 
 from ..utils.base_model import BaseModel
 

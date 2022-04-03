@@ -126,9 +126,19 @@ confs = {
         'preprocessing': {'resize_max': 1024},
     },
     'dns': {
-        'output': 'dns-feats-cg',
+        'output': 'global-feats-dns',
         'model': {'name': 'dns'},
         'preprocessing': {'resize_min': 224},
+    },
+    'geoloc': {
+        'output': 'global-feats-geoloc',
+        'model': {'name': 'geoloc', 'rrm': False},
+        'preprocessing': {'resize_min': 300},
+    },
+    'geoloc-rrm': {
+        'output': 'global-feats-geoloc-rrm',
+        'model': {'name': 'geoloc', 'rrm': True},
+        'preprocessing': {'resize_min': 300},
     }
 }
 

@@ -9,3 +9,5 @@ scipy
 h5py
 pycolmap>=0.1.0
 kornia
+efficientnet_pytorch==0.7.0
+einops

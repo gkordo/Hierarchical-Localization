@@ -17,7 +17,7 @@ parser.add_argument('--num_covis', type=int, default=20,
                     help='Number of image pairs for SfM, default: %(default)s')
 parser.add_argument('--num_loc', type=int, default=50,
                     help='Number of image pairs for loc, default: %(default)s')
-parser.add_argument('--retrieval', type=str, default='dns', choices=['netvlad', 'dns'],
+parser.add_argument('--retrieval', type=str, default='netvlad', choices=['netvlad', 'dns', 'geoloc', 'geoloc-rrm'],
                     help='Method used for retrieval: %(default)s')
 parser.add_argument('--matching', type=str, default='superglue',
                     choices=['superglue', 'superglue-fast', 'NN-superpoint'],
