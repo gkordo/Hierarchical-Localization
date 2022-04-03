@@ -197,7 +197,7 @@ class ImageDataset(torch.utils.data.Dataset):
         if self.conf.resize_max and (self.conf.resize_force
                                      or max(size) > self.conf.resize_max):
             resize_max = self.conf.resize_max
-            if 'scales' in self.conf.scales:
+            if 'scales' in vars(self.conf):
                 resize_max *= max(self.conf.scales)
             scale = resize_max / max(size)
             size_new = tuple(int(round(x*scale)) for x in size)
@@ -205,7 +205,7 @@ class ImageDataset(torch.utils.data.Dataset):
         if self.conf.resize_min and (self.conf.resize_force
                                      or min(size) > self.conf.resize_min):
             resize_min = self.conf.resize_min
-            if 'scales' in self.conf.scales:
+            if 'scales' in vars(self.conf):
                 resize_min *= max(self.conf.scales)
             scale = self.conf.resize_min / min(size)
             size_new = tuple(int(round(x*scale)) for x in size)
@@ -243,7 +243,8 @@ def main(conf: Dict,
     loader = torch.utils.data.DataLoader(loader, num_workers=1)
 
     scales, ext = [1], ''
-    if 'scales' in conf['preprocessing']:
+    if 'scales' in conf['preprocessing'] and \
+            conf['preprocessing']['scales'] != [1]:
         scales = conf['preprocessing']['scales']
         ext = f'_multiscale'
     if feature_path is None:
