@@ -29,6 +29,8 @@ parser.add_argument('--img_size', type=int, default=None,
 parser.add_argument('--multiscale', type=str, default='[1]',
                     help="Use multiscale vectors for global descriptors, " +
                     " examples: '[1]' | '[1, 1/2**(1/2), 1/2]' | '[1, 2**(1/2), 1/2**(1/2)]' (default: '[1]')")
+parser.add_argument('--query_expansion', type=int, default=None,
+                    help='Number of target images used for query expansion, default: %(default)s')
 args = parser.parse_args()
 
 # Setup the paths
@@ -39,6 +41,7 @@ outputs = args.outputs  # where everything will be saved
 ext = f'_white' if args.whitening else ''
 ext += f'_{args.img_size}' if args.img_size is not None else ''
 ext += f'_multiscale' if args.multiscale != '[1]' else ''
+ext += f'_qe{args.query_expansion}' if args.query_expansion is not None else ''
 
 sift_sfm = outputs / 'sfm_sift'  # from which we extract the reference poses
 reference_sfm = outputs / 'sfm_superpoint+superglue'  # the SfM model we will build
@@ -85,7 +88,7 @@ if args.whitening:
     global_descriptors = whitening.main(global_descriptors)
 pairs_from_retrieval.main(
     global_descriptors, loc_pairs, args.num_loc,
-    query_prefix='query', db_model=reference_sfm)
+    query_prefix='query', db_model=reference_sfm, query_expansion=args.query_expansion)
 loc_matches = match_features.main(
     matcher_conf, loc_pairs, feature_conf['output'], outputs)
 

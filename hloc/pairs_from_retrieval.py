@@ -5,6 +5,7 @@ import h5py
 import numpy as np
 import torch
 import collections.abc as collections
+import torch.nn.functional as F
 
 from . import logger
 from .utils.parsers import parse_image_lists
@@ -64,9 +65,19 @@ def pairs_from_score_matrix(scores: torch.Tensor,
     return pairs
 
 
+def average_query_expansion(query_desc, db_desc, similarities, N=5):
+    new_query_desc = []
+    for q, s in zip(query_desc, similarities):
+        query_exp = db_desc[torch.topk(s, N).indices]
+        q = q.unsqueeze(0) + query_exp.mean(dim=0, keepdims=True)
+        q = F.normalize(q, p=2, dim=-1)
+        new_query_desc.append(q)
+    return torch.cat(new_query_desc, 0)
+
+
 def main(descriptors, output, num_matched,
          query_prefix=None, query_list=None,
-         db_prefix=None, db_list=None, db_model=None, db_descriptors=None):
+         db_prefix=None, db_list=None, db_model=None, db_descriptors=None, query_expansion=None):
     logger.info('Extracting image pairs from a retrieval database.')
 
     # We handle multiple reference feature files.
@@ -93,6 +104,10 @@ def main(descriptors, output, num_matched,
     db_desc = get_descriptors(db_names, db_descriptors, name2db)
     query_desc = get_descriptors(query_names, descriptors)
     sim = torch.einsum('id,jd->ij', query_desc.to(device), db_desc.to(device))
+
+    if query_expansion is not None:
+        query_desc = average_query_expansion(query_desc, db_desc, sim, N=query_expansion)
+        sim = torch.einsum('id,jd->ij', query_desc.to(device), db_desc.to(device))
 
     # Avoid self-matching
     self = np.array(query_names)[:, None] == np.array(db_names)[None]
