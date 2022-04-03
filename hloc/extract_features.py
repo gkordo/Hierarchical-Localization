@@ -10,6 +10,7 @@ from tqdm import tqdm
 import pprint
 import collections.abc as collections
 import PIL.Image
+import torch.nn.functional as F
 
 from . import extractors, logger
 from .utils.base_model import dynamic_load
@@ -155,6 +156,7 @@ class ImageDataset(torch.utils.data.Dataset):
         'globs': ['*.jpg', '*.png', '*.jpeg', '*.JPG', '*.PNG'],
         'grayscale': False,
         'resize_max': None,
+        'resize_min': None,
         'resize_force': False,
         'interpolation': 'cv2_area',  # pil_linear is more accurate but slower
     }
@@ -194,11 +196,17 @@ class ImageDataset(torch.utils.data.Dataset):
 
         if self.conf.resize_max and (self.conf.resize_force
                                      or max(size) > self.conf.resize_max):
-            scale = self.conf.resize_max / max(size)
+            resize_max = self.conf.resize_max
+            if 'scales' in self.conf.scales:
+                resize_max *= max(self.conf.scales)
+            scale = resize_max / max(size)
             size_new = tuple(int(round(x*scale)) for x in size)
             image = resize_image(image, size_new, self.conf.interpolation)
         if self.conf.resize_min and (self.conf.resize_force
                                      or min(size) > self.conf.resize_min):
+            resize_min = self.conf.resize_min
+            if 'scales' in self.conf.scales:
+                resize_min *= max(self.conf.scales)
             scale = self.conf.resize_min / min(size)
             size_new = tuple(int(round(x*scale)) for x in size)
             image = resize_image(image, size_new, self.conf.interpolation)
@@ -234,8 +242,12 @@ def main(conf: Dict,
     loader = ImageDataset(image_dir, conf['preprocessing'], image_list)
     loader = torch.utils.data.DataLoader(loader, num_workers=1)
 
+    scales, ext = [1], ''
+    if 'scales' in conf['preprocessing']:
+        scales = conf['preprocessing']['scales']
+        ext = f'_multiscale'
     if feature_path is None:
-        feature_path = Path(export_dir, conf['output']+'.h5')
+        feature_path = Path(export_dir, conf['output']+ext+'.h5')
     feature_path.parent.mkdir(exist_ok=True, parents=True)
     skip_names = set(list_h5_names(feature_path)
                      if feature_path.exists() and not overwrite else ())
@@ -252,8 +264,18 @@ def main(conf: Dict,
         if name in skip_names:
             continue
 
-        pred = model(map_tensor(data, lambda x: x.to(device)))
-        pred = {k: v[0].cpu().numpy() for k, v in pred.items()}
+        if scales != [1]:
+            desc = []
+            for s in scales:
+                inp = dict(data)
+                inp['image'] = F.interpolate(inp['image'], scale_factor=s, mode='bilinear', align_corners=False)
+                desc.append(model(map_tensor(inp, lambda x: x.to(device)))['global_descriptor'])
+            desc = torch.cat(desc, 0).mean(0)
+            desc = F.normalize(desc, p=2, dim=-1)
+            pred = {'global_descriptor': desc.cpu().numpy()}
+        else:
+            pred = model(map_tensor(data, lambda x: x.to(device)))
+            pred = {k: v[0].cpu().numpy() for k, v in pred.items()}
 
         pred['image_size'] = original_size = data['original_size'][0].numpy()
         if 'keypoints' in pred:

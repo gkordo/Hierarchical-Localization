@@ -17,7 +17,7 @@ parser.add_argument('--num_covis', type=int, default=20,
                     help='Number of image pairs for SfM, default: %(default)s')
 parser.add_argument('--num_loc', type=int, default=50,
                     help='Number of image pairs for loc, default: %(default)s')
-parser.add_argument('--retrieval', type=str, default='dns', choices=['dns'],
+parser.add_argument('--retrieval', type=str, default='dns', choices=['netvlad', 'dns'],
                     help='Method used for retrieval: %(default)s')
 parser.add_argument('--matching', type=str, default='superglue',
                     choices=['superglue', 'superglue-fast', 'NN-superpoint'],
@@ -26,6 +26,9 @@ parser.add_argument('--whitening', type=bool, default=False,
                     help='Feature whitening flag indicator, default: %(default)s')
 parser.add_argument('--img_size', type=int, default=None,
                     help='Min size of the smaller dimension of input images, default: %(default)s')
+parser.add_argument('--multiscale', type=str, default='[1]',
+                    help="Use multiscale vectors for global descriptors, " +
+                    " examples: '[1]' | '[1, 1/2**(1/2), 1/2]' | '[1, 2**(1/2), 1/2**(1/2)]' (default: '[1]')")
 args = parser.parse_args()
 
 # Setup the paths
@@ -35,6 +38,7 @@ images = dataset / 'images/images_upright/'
 outputs = args.outputs  # where everything will be saved
 ext = f'_white' if args.whitening else ''
 ext += f'_{args.img_size}' if args.img_size is not None else ''
+ext += f'_multiscale' if args.multiscale != '[1]' else ''
 
 sift_sfm = outputs / 'sfm_sift'  # from which we extract the reference poses
 reference_sfm = outputs / 'sfm_superpoint+superglue'  # the SfM model we will build
@@ -72,6 +76,7 @@ if not os.path.exists(reference_sfm):
         features,
         sfm_matches)
 
+retrieval_conf['preprocessing']['scales'] = list(eval(args.multiscale))
 if args.img_size is not None:
     retrieval_conf['preprocessing']['resize_min'] = args.img_size
     retrieval_conf['output'] += f'_{args.img_size}'
