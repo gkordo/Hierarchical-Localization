@@ -11,6 +11,7 @@ import pprint
 import collections.abc as collections
 import PIL.Image
 import torch.nn.functional as F
+import torchvision.transforms as transforms
 
 from . import extractors, logger
 from .utils.base_model import dynamic_load
@@ -143,7 +144,7 @@ confs = {
 }
 
 
-def loadToDayGAN():
+def load_ToDayGAN():
     import os
     import sys
     import subprocess
@@ -303,6 +304,12 @@ def main(conf: Dict,
             conf['preprocessing']['scales'] != [1]:
         img_scales = conf['preprocessing']['scales']
         ext = f'_multiscale'
+
+    if use_todaygan:
+        norm = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        todaygan = load_ToDayGAN()
+        ext += f'_todaygan'
+
     if feature_path is None:
         feature_path = Path(export_dir, conf['output']+ext+'.h5')
     feature_path.parent.mkdir(exist_ok=True, parents=True)
@@ -316,16 +323,13 @@ def main(conf: Dict,
     Model = dynamic_load(extractors, conf['model']['name'])
     model = Model(conf['model']).eval().to(device)
 
-    if use_todaygan:
-        todaygan = loadToDayGAN()
-
     for data in tqdm(loader):
         name = data['name'][0]  # remove batch dimension
         if name in skip_names:
             continue
 
         if use_todaygan and 'night' in name:
-            todaygan.set_input({'A': data['image'], 'DA': [1], 'path': ''})
+            todaygan.set_input({'A': norm(data['image']), 'DA': [1], 'path': ''})
             todaygan.test()
             gen_img = todaygan.get_current_visuals(testing=True)['fake_0']
             data['image'] = torch.from_numpy(gen_img / 255.).float().permute(2, 0, 1).unsqueeze(0)
