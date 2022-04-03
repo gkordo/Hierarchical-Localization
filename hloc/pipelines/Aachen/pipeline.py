@@ -17,12 +17,13 @@ parser.add_argument('--num_covis', type=int, default=20,
                     help='Number of image pairs for SfM, default: %(default)s')
 parser.add_argument('--num_loc', type=int, default=50,
                     help='Number of image pairs for loc, default: %(default)s')
-parser.add_argument('--retrieval', type=str, default='netvlad', choices=['netvlad', 'dns', 'geoloc', 'geoloc-rrm'],
+parser.add_argument('--retrieval', type=str, default='netvlad',
+                    choices=['netvlad', 'dns', 'geoloc', 'geoloc-rrm'],
                     help='Method used for retrieval: %(default)s')
 parser.add_argument('--matching', type=str, default='superglue',
                     choices=['superglue', 'superglue-fast', 'NN-superpoint'],
                     help='Method used for matching: %(default)s')
-parser.add_argument('--img_size', type=int, default=None,
+parser.add_argument('--im_size', type=int, default=None,
                     help='Min size of the smaller dimension of input images, default: %(default)s')
 parser.add_argument('--multiscale', type=str, default='[1]',
                     help="Use multiscale vectors for global descriptors, " +
@@ -41,7 +42,7 @@ images = dataset / 'images/images_upright/'
 
 outputs = args.outputs  # where everything will be saved
 ext = f'_white' if args.whitening else ''
-ext += f'_{args.img_size}' if args.img_size is not None else ''
+ext += f'_{args.im_size}' if args.im_size is not None else ''
 ext += f'_multiscale' if args.multiscale != '[1]' else ''
 ext += f'_todaygan' if args.use_todaygan else ''
 
@@ -84,9 +85,9 @@ if not os.path.exists(reference_sfm):
         sfm_matches)
 
 retrieval_conf['preprocessing']['scales'] = list(eval(args.multiscale))
-if args.img_size is not None:
-    retrieval_conf['preprocessing']['resize_min'] = args.img_size
-    retrieval_conf['output'] += f'_{args.img_size}'
+if args.im_size is not None:
+    retrieval_conf['preprocessing']['resize_min'] = args.im_size
+    retrieval_conf['output'] += f'_{args.im_size}'
 global_descriptors = extract_features.main(retrieval_conf, images, outputs, use_todaygan=args.use_todaygan)
 if args.whitening:
     global_descriptors = whitening.main(global_descriptors)
