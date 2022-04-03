@@ -19,6 +19,9 @@ parser.add_argument('--num_loc', type=int, default=50,
                     help='Number of image pairs for loc, default: %(default)s')
 parser.add_argument('--retrieval', type=str, default='dns', choices=['dns'],
                     help='Method used for retrieval: %(default)s')
+parser.add_argument('--matching', type=str, default='superglue',
+                    choices=['superglue', 'superglue-fast', 'NN-superpoint'],
+                    help='Method used for matching: %(default)s')
 parser.add_argument('--whitening', type=bool, default=False,
                     help='Feature whitening flag indicator, default: %(default)s')
 args = parser.parse_args()
@@ -34,7 +37,7 @@ sift_sfm = outputs / 'sfm_sift'  # from which we extract the reference poses
 reference_sfm = outputs / 'sfm_superpoint+superglue'  # the SfM model we will build
 sfm_pairs = outputs / f'pairs-db-covis{args.num_covis}.txt'  # top-k most covisible in SIFT model
 loc_pairs = outputs / f'pairs-query-{args.retrieval}{args.num_loc}{ext}.txt'
-results = outputs / f'Aachen_hloc_superpoint+superglue_{args.retrieval}{args.num_loc}{ext}.txt'
+results = outputs / f'Aachen_hloc_superpoint+{args.matching}_{args.retrieval}{args.num_loc}{ext}.txt'
 
 # list the standard configurations available
 print(f'Configs for feature extractors:\n{pformat(extract_features.confs)}')
@@ -43,7 +46,7 @@ print(f'Configs for feature matchers:\n{pformat(match_features.confs)}')
 # pick one of the configurations for extraction and matching
 retrieval_conf = extract_features.confs[args.retrieval]
 feature_conf = extract_features.confs['superpoint_aachen']
-matcher_conf = match_features.confs['superglue']
+matcher_conf = match_features.confs[args.matching]
 
 features = extract_features.main(feature_conf, images, outputs)
 
