@@ -143,6 +143,51 @@ confs = {
 }
 
 
+def loadToDayGAN():
+    import os
+    import sys
+    import subprocess
+    from zipfile import ZipFile
+
+    todaygan_path = Path(__file__).parent / "../third_party/ToDayGAN/"
+    sys.path.append(str(todaygan_path))
+
+    from models.combogan_model import ComboGANModel
+
+    default_conf = {
+        'name': '2DayGAN_Checkpoint150',
+        'checkpoints_dir': str(todaygan_path),
+        'which_epoch': 150,
+        'fineSize': 256,
+        'n_domains': 2,
+        'batchSize': 1,
+        'input_nc': 3,
+        'output_nc': 3,
+        'ngf': 64,
+        'ndf': 64,
+        'netG_n_blocks': 9,
+        'netG_n_shared': 0,
+        'netD_n_layers': 4,
+        'norm': 'instance',
+        'use_dropout': False,
+        'gpu_ids': [0],
+        'isTrain': False,
+        'reconstruct': False,
+        'autoencode': False,
+    }
+    if not (todaygan_path / '2DayGAN_Checkpoint150').exists():
+        link = 'https://www.dropbox.com/s/mwqfbs19cptrej6/2DayGAN_Checkpoint150.zip'
+        cmd = ['wget', link, '-O', str(todaygan_path / '2DayGAN_Checkpoint150.zip')]
+        subprocess.run(cmd, check=True)
+
+        with ZipFile(str(todaygan_path / '2DayGAN_Checkpoint150.zip'), 'r') as zipObj:
+            zipObj.extractall(str(todaygan_path / '2DayGAN_Checkpoint150'))
+        os.remove(str(todaygan_path / '2DayGAN_Checkpoint150.zip'))
+    opt = SimpleNamespace(**default_conf)
+    model = ComboGANModel(opt)
+    return model
+
+
 def resize_image(image, size, interp):
     if interp.startswith('cv2_'):
         interp = getattr(cv2, 'INTER_'+interp[len('cv2_'):].upper())
@@ -245,7 +290,8 @@ def main(conf: Dict,
          as_half: bool = True,
          image_list: Optional[Union[Path, List[str]]] = None,
          feature_path: Optional[Path] = None,
-         overwrite: bool = False) -> Path:
+         overwrite: bool = False,
+         use_todaygan: bool = False) -> Path:
     logger.info('Extracting local features with configuration:'
                 f'\n{pprint.pformat(conf)}')
 
@@ -270,10 +316,19 @@ def main(conf: Dict,
     Model = dynamic_load(extractors, conf['model']['name'])
     model = Model(conf['model']).eval().to(device)
 
+    if use_todaygan:
+        todaygan = loadToDayGAN()
+
     for data in tqdm(loader):
         name = data['name'][0]  # remove batch dimension
         if name in skip_names:
             continue
+
+        if use_todaygan and 'night' in name:
+            todaygan.set_input({'A': data['image'], 'DA': [1], 'path': ''})
+            todaygan.test()
+            gen_img = todaygan.get_current_visuals(testing=True)['fake_0']
+            data['image'] = torch.from_numpy(gen_img / 255.).float().permute(2, 0, 1).unsqueeze(0)
 
         if img_scales != [1]:
             desc = []
