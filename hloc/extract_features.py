@@ -242,10 +242,10 @@ def main(conf: Dict,
     loader = ImageDataset(image_dir, conf['preprocessing'], image_list)
     loader = torch.utils.data.DataLoader(loader, num_workers=1)
 
-    scales, ext = [1], ''
+    img_scales, ext = [1], ''
     if 'scales' in conf['preprocessing'] and \
             conf['preprocessing']['scales'] != [1]:
-        scales = conf['preprocessing']['scales']
+        img_scales = conf['preprocessing']['scales']
         ext = f'_multiscale'
     if feature_path is None:
         feature_path = Path(export_dir, conf['output']+ext+'.h5')
@@ -265,9 +265,9 @@ def main(conf: Dict,
         if name in skip_names:
             continue
 
-        if scales != [1]:
+        if img_scales != [1]:
             desc = []
-            for s in scales:
+            for s in img_scales:
                 inp = dict(data)
                 inp['image'] = F.interpolate(inp['image'], scale_factor=s, mode='bilinear', align_corners=False)
                 desc.append(model(map_tensor(inp, lambda x: x.to(device)))['global_descriptor'])
