@@ -80,9 +80,9 @@ class GeoLoc(BaseModel):
         img = self.norm_rgb(data['image'])
         desc = self.model.extract_features(img)
         desc = einops.rearrange(desc, 'b c h w -> b (h w) c')
-        desc = einops.reduce(desc, 'b n c -> b c', 'mean')
         if hasattr(self, 'ret_head'):
             desc = self.ret_head(desc)
+        desc = einops.reduce(desc, 'b n c -> b c', 'mean')
         desc = F.normalize(desc, p=2, dim=1)
         return {
             'global_descriptor': desc
