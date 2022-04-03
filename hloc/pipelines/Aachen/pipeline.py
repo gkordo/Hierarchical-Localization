@@ -24,6 +24,8 @@ parser.add_argument('--matching', type=str, default='superglue',
                     help='Method used for matching: %(default)s')
 parser.add_argument('--whitening', type=bool, default=False,
                     help='Feature whitening flag indicator, default: %(default)s')
+parser.add_argument('--img_size', type=int, default=None,
+                    help='Min size of the smaller dimension of input images, default: %(default)s')
 args = parser.parse_args()
 
 # Setup the paths
@@ -32,6 +34,7 @@ images = dataset / 'images/images_upright/'
 
 outputs = args.outputs  # where everything will be saved
 ext = f'_white' if args.whitening else ''
+ext += f'_{args.img_size}' if args.img_size is not None else ''
 
 sift_sfm = outputs / 'sfm_sift'  # from which we extract the reference poses
 reference_sfm = outputs / 'sfm_superpoint+superglue'  # the SfM model we will build
@@ -69,6 +72,9 @@ if not os.path.exists(reference_sfm):
         features,
         sfm_matches)
 
+if args.img_size is not None:
+    retrieval_conf['preprocessing']['resize_min'] = args.img_size
+    retrieval_conf['output'] += f'_{args.img_size}'
 global_descriptors = extract_features.main(retrieval_conf, images, outputs)
 if args.whitening:
     global_descriptors = whitening.main(global_descriptors)
