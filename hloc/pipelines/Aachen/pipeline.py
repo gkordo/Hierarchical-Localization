@@ -3,7 +3,7 @@ from pathlib import Path
 from pprint import pformat
 import argparse
 
-from ... import extract_features, match_features
+from ... import extract_features, match_features, whitening
 from ... import pairs_from_covisibility, pairs_from_retrieval
 from ... import colmap_from_nvm, triangulation, localize_sfm
 
@@ -19,6 +19,8 @@ parser.add_argument('--num_loc', type=int, default=50,
                     help='Number of image pairs for loc, default: %(default)s')
 parser.add_argument('--retrieval', type=str, default='dns', choices=['dns'],
                     help='Method used for retrieval: %(default)s')
+parser.add_argument('--whitening', type=bool, default=False,
+                    help='Feature whitening flag indicator, default: %(default)s')
 args = parser.parse_args()
 
 # Setup the paths
@@ -26,11 +28,13 @@ dataset = args.dataset
 images = dataset / 'images/images_upright/'
 
 outputs = args.outputs  # where everything will be saved
+ext = f'_white' if args.whitening else ''
+
 sift_sfm = outputs / 'sfm_sift'  # from which we extract the reference poses
 reference_sfm = outputs / 'sfm_superpoint+superglue'  # the SfM model we will build
 sfm_pairs = outputs / f'pairs-db-covis{args.num_covis}.txt'  # top-k most covisible in SIFT model
-loc_pairs = outputs / f'pairs-query-{args.retrieval}{args.num_loc}.txt'
-results = outputs / f'Aachen_hloc_superpoint+superglue_{args.retrieval}{args.num_loc}.txt'
+loc_pairs = outputs / f'pairs-query-{args.retrieval}{args.num_loc}{ext}.txt'
+results = outputs / f'Aachen_hloc_superpoint+superglue_{args.retrieval}{args.num_loc}{ext}.txt'
 
 # list the standard configurations available
 print(f'Configs for feature extractors:\n{pformat(extract_features.confs)}')
@@ -63,6 +67,8 @@ if not os.path.exists(reference_sfm):
         sfm_matches)
 
 global_descriptors = extract_features.main(retrieval_conf, images, outputs)
+if args.whitening:
+    global_descriptors = whitening.main(global_descriptors)
 pairs_from_retrieval.main(
     global_descriptors, loc_pairs, args.num_loc,
     query_prefix='query', db_model=reference_sfm)
