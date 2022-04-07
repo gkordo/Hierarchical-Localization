@@ -133,11 +133,6 @@ confs = {
     },
     'geoloc': {
         'output': 'global-feats-geoloc',
-        'model': {'name': 'geoloc', 'rrm': False},
-        'preprocessing': {'resize_min': 300},
-    },
-    'geoloc-rrm': {
-        'output': 'global-feats-geoloc-rrm',
         'model': {'name': 'geoloc', 'rrm': True},
         'preprocessing': {'resize_min': 300},
     }

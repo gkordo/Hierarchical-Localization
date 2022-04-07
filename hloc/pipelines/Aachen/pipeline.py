@@ -18,7 +18,7 @@ parser.add_argument('--num_covis', type=int, default=20,
 parser.add_argument('--num_loc', type=int, default=50,
                     help='Number of image pairs for loc, default: %(default)s')
 parser.add_argument('--retrieval', type=str, default='netvlad',
-                    choices=['netvlad', 'dns', 'geoloc', 'geoloc-rrm'],
+                    choices=['netvlad', 'dns', 'geoloc'],
                     help='Method used for retrieval: %(default)s')
 parser.add_argument('--matching', type=str, default='superglue',
                     choices=['superglue', 'superglue-fast', 'NN-superpoint'],
@@ -85,7 +85,7 @@ if not os.path.exists(reference_sfm):
         sfm_matches)
 
 retrieval_conf['preprocessing']['scales'] = list(eval(args.multiscale))
-if args.im_size is not None:
+if args.im_size is not None and 'resize_min' in retrieval_conf['preprocessing']:
     retrieval_conf['preprocessing']['resize_min'] = args.im_size
     retrieval_conf['output'] += f'_{args.im_size}'
 global_descriptors = extract_features.main(retrieval_conf, images, outputs, use_todaygan=args.use_todaygan)
